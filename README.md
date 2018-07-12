@@ -1,11 +1,11 @@
 # YouTube Play List Reverser
 [![Build Status](https://travis-ci.org/fiahfy/youtube-playlist-reverser.svg?branch=master)](https://travis-ci.org/fiahfy/youtube-playlist-reverser)
 
-> Chrome Extension for reversing play list on YouTube.
+> Chrome Extension for Reversing Play List on YouTube.
 
 
 ## Features
-* Reverse Play List on YouTube.
+* Reverse play list for auto play.
 
 
 ## Screenshots
