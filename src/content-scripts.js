@@ -50,7 +50,7 @@ const setupButton = (enabled) => {
       </a>
     `
     renderer.onclick = () => {
-      chrome.runtime.sendMessage({ id: 'stateChanged' })
+      chrome.runtime.sendMessage({ id: 'buttonClicked' })
     }
     buttons.append(renderer)
   }
@@ -62,27 +62,30 @@ const setupButton = (enabled) => {
 }
 
 const sortList = (enabled) => {
+  list = []
+  index = 0
   const items = Array.from(document.querySelectorAll('ytd-playlist-panel-video-renderer'))
-  items.forEach((item, i) => {
-    const newIndex = enabled ? items.length - i : i + 1
-    const top = 64 * (newIndex - 1)
-    // Logger.log(i, top)
-    item.style.transform = `translate3d(0px, ${top}px, 0px)`
-    // Logger.log(item.querySelector('#index'))
-    if (item.querySelector('#index').innerText.match(/\d+/)) {
-      item.querySelector('#index').innerText = newIndex
-    } else {
-      index = i
+  items.forEach((item) => {
+    // const newIndex = enabled ? items.length - i : i + 1
+    // // const top = 64 * (newIndex - 1)
+    // // item.style.transform = `translate3d(0px, ${top}px, 0px)`
+    // if (item.querySelector('#index').innerText.match(/\d+/)) {
+    //   // item.querySelector('#index').innerText = newIndex
+    // } else {
+    //   index = i
+    // }
+    const url = item.querySelector('#wc-endpoint').getAttribute('href')
+    const match = url.match(/index=(\d+)/)
+    const idx = Number(match[1]) - 1
+    list[idx] = url
+    if (!item.querySelector('#index').innerText.match(/\d+/)) {
+      index = idx
     }
-  })
-  list = items.map((item) => {
-    return item.querySelector('#wc-endpoint').getAttribute('href')
   })
 }
 
 const timeupdate = ({ target }) => {
-  // Logger.log(target.duration, target.currentTime)
-  if (target.currentTime > target.duration - 60) {
+  if (target.currentTime > target.duration - 1) {
     Logger.log('redirect')
     if (index) {
       location.href = list[index - 1]
@@ -105,68 +108,31 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 
   const { id, data } = message
   switch (id) {
-    case 'stateChanged':
+    case 'enabledChanged':
       await setupButton(data.enabled)
       await sortList(data.enabled)
       await setupVideo(data.enabled)
       break
-    case 'urlChanged':
-      // setTimeout(() => {
-      // location.href = url
-    // }, 1000)
-      break
   }
 })
 
-;(async () => {
+;(() => {
   Logger.log('content script loaded')
 
-  const observer = new MutationObserver(async (mutations) => {
-    const [mutation] = mutations
-    if (mutation.removedNodes.length) {
-      chrome.runtime.sendMessage({ id: 'buttonRemoved', data: { url: location.href } })
-    }
+  document.addEventListener('DOMContentLoaded', async () => {
+    const observer = new MutationObserver(async (mutations) => {
+      const [mutation] = mutations
+      if (mutation.removedNodes.length) {
+        chrome.runtime.sendMessage({ id: 'buttonRemoved', data: { url: location.href } })
+      }
+    })
+    const item = await querySelectorAsync('#top-level-buttons')
+    observer.observe(item, { childList: true })
+
+    // const video = document.querySelector('video')
+    // Logger.log(getEventListeners(video))
+    // getEventListeners(video).ended.forEach((e) => { e.remove() })
+
+    chrome.runtime.sendMessage({ id: 'contentLoaded', data: { url: location.href } })
   })
-  const item = await querySelectorAsync('#top-level-buttons')
-  observer.observe(item, { childList: true })
-
-  // const video = document.querySelector('video')
-  // Logger.log(getEventListeners(video))
-  // getEventListeners(video).ended.forEach((e) => { e.remove() })
-
-  chrome.runtime.sendMessage({ id: 'contentLoaded', data: { url: location.href } })
-
-  // return
-
-  // const items = Array.from(container.querySelectorAll('ytd-playlist-panel-video-renderer'))
-  // Logger.log(items)
-  // Logger.log(items.reverse())
-  // // .forEach(async (item) => {
-  // //   Logger.log(item)
-  // //   container.append(item)
-  // //   await wait()
-  // // })
-  // for (let item of items) {
-  //   // item.remove()
-  //   // document.body.append(item)
-  //   container.append(item)
-  //   Logger.log(item)
-  //   Logger.log(1)
-  //   // await wait()
-  // }
-  // await wait()
-  // for (let item of items) {
-  //   // item.remove()
-  //   // document.body.append(item)
-  //   // container.append(item)
-  //   // Logger.log(item)
-  //   // Logger.log(1)
-  //   // await wait()
-  // }
-  // buttons.append = buttons.innerHTML + `
-  // <ytd-toggle-button-renderer button-renderer="" class="style-scope ytd-menu-renderer style-grey-text" is-icon-button="" has-no-text=""><a class="yt-simple-endpoint style-scope ytd-toggle-button-renderer" tabindex="-1"><yt-icon-button id="button" class="style-scope ytd-toggle-button-renderer style-grey-text" aria-pressed="false"><button id="button" class="style-scope yt-icon-button" aria-label="再生リストをシャッフル"><yt-icon class="style-scope ytd-toggle-button-renderer"><svg viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" focusable="false" class="style-scope yt-icon" style="pointer-events: none; display: block; width: 100%; height: 100%;"><g class="style-scope yt-icon">
-  //       <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" class="style-scope yt-icon"></path>
-  //     </g></svg>
-  // </yt-icon></button></yt-icon-button></a></ytd-toggle-button-renderer>
-  // `
 })()
