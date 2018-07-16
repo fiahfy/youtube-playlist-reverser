@@ -20,14 +20,6 @@ const querySelectorAsync = async (selector) => {
   })
 }
 
-// const wait = async () => {
-//   return new Promise((resolve) => {
-//     setTimeout(() => {
-//       resolve()
-//     }, 1000)
-//   })
-// }
-
 const setupButton = (enabled) => {
   const buttons = document.querySelector('ytd-playlist-panel-renderer ytd-menu-renderer #top-level-buttons')
   const container = document.querySelector('ytd-playlist-panel-renderer iron-list #items')
@@ -103,15 +95,15 @@ const setupVideo = (enabled) => {
   }
 }
 
-chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-  Logger.log('onMessage', message, sender, sendResponse)
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  Logger.log('chrome.runtime.onMessage', message, sender, sendResponse)
 
   const { id, data } = message
   switch (id) {
     case 'enabledChanged':
-      await setupButton(data.enabled)
-      await sortList(data.enabled)
-      await setupVideo(data.enabled)
+      setupButton(data.enabled)
+      sortList(data.enabled)
+      setupVideo(data.enabled)
       break
   }
 })
@@ -120,10 +112,10 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   Logger.log('content script loaded')
 
   document.addEventListener('DOMContentLoaded', async () => {
-    const observer = new MutationObserver(async (mutations) => {
+    const observer = new MutationObserver((mutations) => {
       const [mutation] = mutations
       if (mutation.removedNodes.length) {
-        chrome.runtime.sendMessage({ id: 'buttonRemoved', data: { url: location.href } })
+        chrome.runtime.sendMessage({ id: 'buttonRemoved' })
       }
     })
     const item = await querySelectorAsync('#top-level-buttons')
@@ -133,6 +125,6 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     // Logger.log(getEventListeners(video))
     // getEventListeners(video).ended.forEach((e) => { e.remove() })
 
-    chrome.runtime.sendMessage({ id: 'contentLoaded', data: { url: location.href } })
+    chrome.runtime.sendMessage({ id: 'contentLoaded' })
   })
 })()
